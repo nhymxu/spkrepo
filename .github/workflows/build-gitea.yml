@@ -6,6 +6,10 @@ on:
       version:
         description: "Gitea version to build, e.g. 1.26.2 (must match an upstream v<version> release)"
         required: true
+      rev:
+        description: "Package revision (bump for a packaging-only rebuild of the same version)"
+        required: false
+        default: "1"
 
 jobs:
   build:
@@ -13,5 +17,6 @@ jobs:
     with:
       package: gitea
       version: ${{ inputs.version }}
+      rev: ${{ inputs.rev }}
     permissions:
       contents: write

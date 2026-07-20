@@ -14,7 +14,7 @@
 # so pnpm resolves and installs that pinned version automatically.
 #
 # Usage:
-#   packages/gitea/build.sh --version 1.26.2 [--os-min-ver 7.0-40000] [--out DIR]
+#   packages/gitea/build.sh --version 1.26.2 [--rev N] [--os-min-ver 7.0-40000] [--out DIR]
 
 set -euo pipefail
 
@@ -72,7 +72,7 @@ spk_stage_package "${BINARY}" "gitea"
 
 cat >"${STAGE_DIR}/INFO" <<EOF
 package="gitea"
-version="${VERSION}"
+version="${PKG_VERSION}"
 arch="x86_64"
 os_min_ver="${OS_MIN_VER}"
 displayname="Gitea"

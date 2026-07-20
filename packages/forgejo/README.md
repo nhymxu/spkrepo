@@ -18,6 +18,12 @@ sqlite), on an x86_64 Linux host (no cross-compilation):
 packages/forgejo/build.sh --version 15.0.4
 ```
 
+Add `--rev N` (default `1`) to bump the *package* revision without
+changing the upstream version -- e.g. a packaging-only fix (a
+`conf/resource`/`service-setup` change, no new Forgejo release) rebuilds
+the same `--version` with `--rev 2`, producing `15.0.4-2`. The upstream
+fetch always uses the bare `--version` regardless of `--rev`.
+
 Fetches Forgejo's own vendored-deps source tarball
 (`forgejo-src-<version>.tar.gz` from its Codeberg release, not a git
 clone), builds with
@@ -26,10 +32,15 @@ clone), builds with
 binary named `gitea`), with `LDFLAGS` embedding `CustomPath`/`CustomConf`/
 `AppWorkPath`/`PIDFile` under `/var/packages/forgejo/var` directly into
 the binary. Packages the binary (`bin/gitea`) plus a pre-seeded
-`var/conf.ini` into `packages/forgejo/dist/forgejo-<version>-x86_64.spk`.
+`var/conf.ini` into
+`packages/forgejo/dist/forgejo-<version>-<rev>-x86_64.spk`.
 
 `--os-min-ver` (default `7.0-40000`, i.e. DSM7) and `--out` (default
-`packages/forgejo/dist`) are optional overrides.
+`packages/forgejo/dist`) are optional overrides. The final `.spk`'s
+`INFO` `version=` and filename both use `<version>-<rev>`
+(`forgejo-15.0.4-1-x86_64.spk` with the default `--rev 1`), which the
+catalog's natural-sort version comparator (`tools/dsm_catalog.py`)
+already orders correctly against both bare and revved versions.
 
 ## Package structure
 
@@ -71,16 +82,17 @@ sources -- **not** all forgejo-specific:
 
 ## CI: build, release, publish
 
-`.github/workflows/build-forgejo.yml` (`workflow_dispatch`, input
-`version`) is a thin dispatcher that calls the shared reusable workflow
+`.github/workflows/build-forgejo.yml` (`workflow_dispatch`, inputs
+`version` and `rev`, the latter defaulting to `1`) is a thin dispatcher
+that calls the shared reusable workflow
 `.github/workflows/build-package.yml` with `package: forgejo` --
 `packages/gitea/` uses the same reusable workflow with `package: gitea`,
 so adding a third package only needs a new one-line dispatcher, not a
 new copy of the whole pipeline. The reusable workflow:
 
-1. Runs `packages/<package>/build.sh --version <version>`.
-2. `gh release create <package>-v<version>` and uploads the `.spk` as a
-   release asset.
+1. Runs `packages/<package>/build.sh --version <version> --rev <rev>`.
+2. `gh release create <package>-v<version>-<rev>` and uploads the `.spk`
+   as a release asset.
 3. `python3 tools/spk_to_payload.py <spk> --link <release-asset-url>
    --write-index data/packages.json` (the shared tool at the repo root --
    intentionally reused here, since it's built to be called by any

@@ -21,6 +21,11 @@ corepack enable
 packages/gitea/build.sh --version 1.26.2
 ```
 
+Add `--rev N` (default `1`) to bump the *package* revision without
+changing the upstream version -- e.g. a packaging-only fix rebuilds the
+same `--version` with `--rev 2`, producing `1.26.2-2`. The upstream
+fetch always uses the bare `--version` regardless of `--rev`.
+
 Fetches Gitea's release source archive
 (`https://github.com/go-gitea/gitea/archive/v<version>.tar.gz`), builds
 with `CGO_ENABLED=1 TAGS="bindata sqlite sqlite_unlock_notify" make build`
@@ -28,10 +33,15 @@ with `CGO_ENABLED=1 TAGS="bindata sqlite sqlite_unlock_notify" make build`
 rename needed), with `LDFLAGS` embedding `CustomPath`/`CustomConf`/
 `AppWorkPath`/`PIDFile` under `/var/packages/gitea/var` directly into the
 binary. Packages the binary (`bin/gitea`) plus a pre-seeded
-`var/conf.ini` into `packages/gitea/dist/gitea-<version>-x86_64.spk`.
+`var/conf.ini` into
+`packages/gitea/dist/gitea-<version>-<rev>-x86_64.spk`.
 
 `--os-min-ver` (default `7.0-40000`, i.e. DSM7) and `--out` (default
-`packages/gitea/dist`) are optional overrides.
+`packages/gitea/dist`) are optional overrides. The final `.spk`'s
+`INFO` `version=` and filename both use `<version>-<rev>`
+(`gitea-1.26.2-1-x86_64.spk` with the default `--rev 1`), which the
+catalog's natural-sort version comparator (`tools/dsm_catalog.py`)
+already orders correctly against both bare and revved versions.
 
 ## What's different from packages/forgejo/
 
@@ -52,8 +62,9 @@ binary. Packages the binary (`bin/gitea`) plus a pre-seeded
 
 ## CI: build, release, publish
 
-`.github/workflows/build-gitea.yml` (`workflow_dispatch`, input
-`version`) calls the shared reusable workflow
+`.github/workflows/build-gitea.yml` (`workflow_dispatch`, inputs
+`version` and `rev`, the latter defaulting to `1`) calls the shared
+reusable workflow
 `.github/workflows/build-package.yml` with `package: gitea` -- same
 build → release → `tools/spk_to_payload.py --write-index
 data/packages.json` → commit pipeline documented in

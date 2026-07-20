@@ -7,18 +7,27 @@
 # recipe that's identical across every package -- app-specific bits (source
 # fetch, build flags, INFO fields) stay in each package's own build.sh.
 
-# Parses --version/--os-min-ver/--out into VERSION/OS_MIN_VER/OUT_DIR.
-# Requires SCRIPT_DIR set by the caller. Exits 1 on unknown arg or missing
-# --version.
+# Parses --version/--rev/--os-min-ver/--out into VERSION/REV/PKG_VERSION/
+# OS_MIN_VER/OUT_DIR. VERSION stays the bare upstream version (used to
+# fetch upstream source); PKG_VERSION ("<version>-<rev>") is the DSM
+# package version -- INFO's version= and the .spk filename -- so a
+# packaging-only rebuild (no upstream change) bumps --rev instead of
+# faking a new upstream version. Requires SCRIPT_DIR set by the caller.
+# Exits 1 on unknown arg or missing --version.
 spk_parse_build_args() {
     OS_MIN_VER="7.0-40000"
     OUT_DIR="${SCRIPT_DIR}/dist"
     VERSION=""
+    REV="1"
 
     while [ $# -gt 0 ]; do
         case "$1" in
             --version)
                 VERSION="$2"
+                shift 2
+                ;;
+            --rev)
+                REV="$2"
                 shift 2
                 ;;
             --os-min-ver)
@@ -37,9 +46,11 @@ spk_parse_build_args() {
     done
 
     if [ -z "${VERSION}" ]; then
-        echo "usage: $(basename "$0") --version X.Y.Z [--os-min-ver 7.0-40000] [--out DIR]" >&2
+        echo "usage: $(basename "$0") --version X.Y.Z [--rev N] [--os-min-ver 7.0-40000] [--out DIR]" >&2
         exit 1
     fi
+
+    PKG_VERSION="${VERSION}-${REV}"
 }
 
 # Populates STAGE_DIR with package.tgz (binary + conf.ini), the generic
@@ -71,14 +82,14 @@ spk_stage_package() {
 }
 
 # Tars STAGE_DIR (which must already contain INFO, written by the caller)
-# into the final .spk under OUT_DIR. Requires OUT_DIR, STAGE_DIR, VERSION
-# set by the caller.
+# into the final .spk under OUT_DIR. Requires OUT_DIR, STAGE_DIR,
+# PKG_VERSION set by the caller.
 # Args: PACKAGE_NAME
 spk_write_archive() {
     local package_name="$1"
 
     mkdir -p "${OUT_DIR}"
-    SPK_PATH="${OUT_DIR}/${package_name}-${VERSION}-x86_64.spk"
+    SPK_PATH="${OUT_DIR}/${package_name}-${PKG_VERSION}-x86_64.spk"
     tar cf "${SPK_PATH}" -C "${STAGE_DIR}" INFO package.tgz scripts conf WIZARD_UIFILES
     echo "wrote ${SPK_PATH}"
 }

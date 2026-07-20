@@ -11,7 +11,7 @@
 # (CGO_ENABLED=1) -- no cross-compilation.
 #
 # Usage:
-#   packages/forgejo/build.sh --version 15.0.4 [--os-min-ver 7.0-40000] [--out DIR]
+#   packages/forgejo/build.sh --version 15.0.4 [--rev N] [--os-min-ver 7.0-40000] [--out DIR]
 
 set -euo pipefail
 
@@ -68,7 +68,7 @@ spk_stage_package "${BINARY}" "gitea"
 
 cat >"${STAGE_DIR}/INFO" <<EOF
 package="forgejo"
-version="${VERSION}"
+version="${PKG_VERSION}"
 arch="x86_64"
 os_min_ver="${OS_MIN_VER}"
 displayname="Forgejo"

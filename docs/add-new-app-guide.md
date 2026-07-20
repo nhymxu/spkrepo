@@ -85,8 +85,11 @@ there, not in the source tree.
 
 ## 4. Write `build.sh`
 
-Args: `--version X.Y.Z` (required), `--os-min-ver` (default
-`7.0-40000`, i.e. DSM7), `--out DIR`. Steps:
+Args: `--version X.Y.Z` (required), `--rev N` (default `1` -- the DSM
+package revision; bump it for a packaging-only rebuild of the same
+upstream `--version`, e.g. a `service-setup`/`conf` fix with no new
+upstream release), `--os-min-ver` (default `7.0-40000`, i.e. DSM7),
+`--out DIR`. Steps:
 
 1. Fetch or build the binary for linux/amd64.
 2. `tar czf package.tgz` containing the binary (+ any required static
@@ -100,12 +103,14 @@ Args: `--version X.Y.Z` (required), `--os-min-ver` (default
    `src/conf/` and `src/wizard/` in as top-level
    `.spk` entries.
 4. Generate `INFO` via heredoc (no template engine) with at least:
-   `package`, `version`, `arch="x86_64"`, `os_min_ver`, `displayname`,
+   `package`, `version` (use `PKG_VERSION`, i.e. `<version>-<rev>`, not
+   the bare `VERSION` -- see `packages/_shared/spk-package.sh`'s
+   `spk_parse_build_args`), `arch="x86_64"`, `os_min_ver`, `displayname`,
    `description`, `maintainer`, `maintainer_url`, `startable="yes"`, and
    `install_dep_packages="..."` for any other DSM package this one
    needs at runtime (e.g. Forgejo needs `git>=2`, since Git-based apps
    need the `git` binary on `PATH`  -- check this for your app too).
-5. `tar cf $OUT/<app>-<version>-x86_64.spk -C staging INFO package.tgz scripts [conf wizard]`
+5. `tar cf $OUT/<app>-<version>-<rev>-x86_64.spk -C staging INFO package.tgz scripts [conf wizard]`
    -- the outer `.spk` container is a **plain, uncompressed** tar.
 
 ## 5. Minimal track: `src/scripts/start-stop-status`
@@ -149,11 +154,12 @@ for a complete worked example of this track.
 ## 6. Wire up CI: reuse the shared workflow, don't copy it
 
 `.github/workflows/build-package.yml` is a **reusable** workflow
-(`workflow_call`, inputs `package` and `version`) that does the whole
-build → release → publish → commit pipeline generically: checkout →
-detect + set up whichever of Go/Node/corepack `build.requires` declares
-→ run `packages/<package>/build.sh --version
-<version>` → `gh release create <package>-v<version> <spk> --title ...
+(`workflow_call`, inputs `package`, `version`, and `rev` -- the latter
+optional, defaulting to `1`) that does the whole build → release →
+publish → commit pipeline generically: checkout → detect + set up
+whichever of Go/Node/corepack `build.requires` declares → run
+`packages/<package>/build.sh --version <version> --rev <rev>` →
+`gh release create <package>-v<version>-<rev> <spk> --title ...
 --notes ...` → compute the deterministic asset download URL →
 `python3 tools/spk_to_payload.py <spk> --link <url> --write-index
 data/packages.json` → commit and push. The push auto-triggers the root
@@ -171,12 +177,16 @@ on:
     inputs:
       version:
         required: true
+      rev:
+        required: false
+        default: "1"
 jobs:
   build:
     uses: ./.github/workflows/build-package.yml
     with:
       package: <app>
       version: ${{ inputs.version }}
+      rev: ${{ inputs.rev }}
     permissions:
       contents: write
 ```
