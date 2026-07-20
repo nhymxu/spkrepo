@@ -35,6 +35,16 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check required repo variables
+        run: |
+          missing=()
+          [ -z "${{ vars.SPK_ARCH }}" ] && missing+=("SPK_ARCH")
+          [ -z "${{ vars.SPK_BUILD }}" ] && missing+=("SPK_BUILD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repo variable(s): ${missing[*]}. Set them under Settings -> Secrets and variables -> Actions -> Variables (see README)." >&2
+            exit 1
+          fi
+
       - name: Render static catalog
         run: python3 tools/render_static_catalog.py --arch "${{ vars.SPK_ARCH }}" --build "${{ vars.SPK_BUILD }}" --out dist/index.json
 
