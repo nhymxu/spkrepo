@@ -50,6 +50,7 @@ somewhere too before you have URLs for them.
 
 ```bash
 python3 tools/render_static_catalog.py --arch x86_64 --build 64570 --out dist/index.json
+python3 tools/render_static_page.py --arch x86_64 --build 64570 --out dist/index.html
 ```
 
 No dependencies beyond Python 3 stdlib (3.9+, uses `dict`/`list` generics).
@@ -61,28 +62,35 @@ package's `os_min_build`, unless a package sets an `os_max_build` cap you
 need to respect. Commit nothing from `dist/` -- it's regenerated on every
 deploy.
 
+`render_static_page.py` renders a human-readable `index.html` from the
+same filtered catalog, so a browser hitting the bare directory path sees
+an info page instead of raw JSON while `index.json` keeps serving DSM.
+
 ### Deploy: GitHub Pages
 
 `.github/workflows/deploy-static-site.yml` builds and publishes `dist`
 via GitHub's official Pages Actions on every push that touches the
 catalog source or renderer. Set repo variables `SPK_ARCH`/`SPK_BUILD`
 under Settings -> Secrets and variables -> Actions -> Variables, and
-enable Pages with source "GitHub Actions" under Settings -> Pages. DSM's
-Package Source "Location" then points at the deployed
-`https://<user>.github.io/<repo>/` (or `.../index.json` if Pages doesn't
-serve it at the bare path).
+enable Pages with source "GitHub Actions" under Settings -> Pages.
+GitHub Pages serves `index.html` at `https://<user>.github.io/<repo>/`
+for browsers -- point DSM's Package Source "Location" at
+`https://<user>.github.io/<repo>/index.json` explicitly so it keeps
+getting the JSON catalog instead of the info page.
 
 ### Deploy: Cloudflare Pages
 
 Connect the repo in the dashboard with build command
-`python3 tools/render_static_catalog.py --arch <arch> --build <build> --out dist/index.json`
+`python3 tools/render_static_catalog.py --arch <arch> --build <build> --out dist/index.json && python3 tools/render_static_page.py --arch <arch> --build <build> --out dist/index.html`
 and output directory `dist`.
 
 ### Adding the repository to DSM
 
 Package Center → Settings → Package Sources → Add:
 - **Name:** anything
-- **Location:** the deployed URL from whichever host above you used
+- **Location:** the deployed `index.json` URL (e.g.
+  `https://<user>.github.io/<repo>/index.json`), not the bare directory
+  path -- that now serves the human-readable info page.
 
 ## Metadata source of truth
 

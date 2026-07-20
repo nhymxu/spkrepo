@@ -7,6 +7,7 @@ on:
       - "data/**"
       - "tools/dsm_catalog.py"
       - "tools/render_static_catalog.py"
+      - "tools/render_static_page.py"
       - ".github/workflows/deploy-static-site.yml"
   workflow_dispatch: {}
 
@@ -47,6 +48,9 @@ jobs:
 
       - name: Render static catalog
         run: python3 tools/render_static_catalog.py --arch "${{ vars.SPK_ARCH }}" --build "${{ vars.SPK_BUILD }}" --out dist/index.json
+
+      - name: Render info page
+        run: python3 tools/render_static_page.py --arch "${{ vars.SPK_ARCH }}" --build "${{ vars.SPK_BUILD }}" --out dist/index.html
 
       - uses: actions/configure-pages@v6
 
