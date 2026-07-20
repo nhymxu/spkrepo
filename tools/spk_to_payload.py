@@ -80,6 +80,15 @@ def extract_icons(spk_path: Path, out_dir: Path) -> list[Path]:
     return written
 
 
+def has_wizard_file(spk_path: Path, filename: str) -> bool:
+    with tarfile.open(spk_path, mode="r:") as tar:
+        try:
+            tar.getmember(f"WIZARD_UIFILES/{filename}")
+            return True
+        except KeyError:
+            return False
+
+
 def fingerprint(path: Path, chunk_size: int = 1024 * 1024) -> tuple[str, int]:
     md5 = hashlib.md5()
     size = 0
@@ -109,6 +118,8 @@ def build_payload(spk_path: Path, link: str, thumbnail: str | None, thumbnail_re
         "deppkgs": split_list(info.get("install_dep_packages")),
         "conflictpkgs": split_list(info.get("install_conflict_packages")),
         "startable": info.get("startable") != "no" and info.get("ctl_stop") != "no",
+        "install_wizard": has_wizard_file(spk_path, "install_uifile"),
+        "upgrade_wizard": has_wizard_file(spk_path, "upgrade_uifile"),
         "link": link,
         "md5": md5,
         "size": size,

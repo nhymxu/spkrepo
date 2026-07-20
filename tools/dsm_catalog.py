@@ -60,6 +60,8 @@ def _pick_latest(entries: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _build_package_dict(entry: dict[str, Any]) -> dict[str, Any]:
+    has_install_wizard = entry.get("install_wizard", False)
+    has_upgrade_wizard = entry.get("upgrade_wizard", False)
     result: dict[str, Any] = {
         "package": entry["package"],
         "version": entry["version"],
@@ -67,9 +69,9 @@ def _build_package_dict(entry: dict[str, Any]) -> dict[str, Any]:
         "desc": entry["description"],
         "link": entry["link"],
         "thumbnail": entry["thumbnail"],
-        "qinst": True,
-        "qupgrade": True,
-        "qstart": entry["startable"],
+        "qinst": not has_install_wizard,
+        "qupgrade": not has_upgrade_wizard,
+        "qstart": entry["startable"] and not has_install_wizard,
         "download_count": 0,
         "recent_download_count": 0,
         "snapshot": [],

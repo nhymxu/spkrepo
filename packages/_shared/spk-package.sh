@@ -67,7 +67,7 @@ spk_stage_package() {
         "${STAGE_DIR}/scripts/"start-stop-status "${STAGE_DIR}/scripts/"installer.dsm7
 
     cp -R "${SCRIPT_DIR}/src/conf" "${STAGE_DIR}/conf"
-    cp -R "${SCRIPT_DIR}/src/wizard" "${STAGE_DIR}/wizard"
+    cp -R "${SCRIPT_DIR}/src/wizard" "${STAGE_DIR}/WIZARD_UIFILES"
 }
 
 # Tars STAGE_DIR (which must already contain INFO, written by the caller)
@@ -79,6 +79,6 @@ spk_write_archive() {
 
     mkdir -p "${OUT_DIR}"
     SPK_PATH="${OUT_DIR}/${package_name}-${VERSION}-x86_64.spk"
-    tar cf "${SPK_PATH}" -C "${STAGE_DIR}" INFO package.tgz scripts conf wizard
+    tar cf "${SPK_PATH}" -C "${STAGE_DIR}" INFO package.tgz scripts conf WIZARD_UIFILES
     echo "wrote ${SPK_PATH}"
 }
