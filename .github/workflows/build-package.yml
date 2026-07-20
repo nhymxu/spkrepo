@@ -66,7 +66,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ inputs.package }}-v${{ inputs.version }}" \
+          tag="${{ inputs.package }}-v${{ inputs.version }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+          gh release create "$tag" \
             "${{ steps.build.outputs.spk_path }}" \
             --title "${{ inputs.package }} v${{ inputs.version }}" \
             --notes "${{ inputs.package }} v${{ inputs.version }}, built from source for DSM7 x86_64."
