@@ -11,7 +11,7 @@ produces the `.spk` and metadata those deployments then serve.
 
 ## Build locally
 
-Requires Go >= 1.24, Node >= 20, `make`, gcc (CGO is enabled for
+Requires Go >= 1.26, Node >= 20, `make`, gcc (CGO is enabled for
 sqlite), on an x86_64 Linux host (no cross-compilation):
 
 ```bash

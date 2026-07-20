@@ -10,7 +10,7 @@ folder wizard, etc.), which apply identically here.
 
 ## Build locally
 
-Requires Go >= 1.24, Node >= 22, `make`, gcc (CGO is enabled for
+Requires Go >= 1.26, Node >= 22, `make`, gcc (CGO is enabled for
 sqlite), on an x86_64 Linux host (no cross-compilation). Gitea's
 frontend build pins a specific `pnpm` version via its own
 `package.json` `"packageManager"` field -- run `corepack enable` once

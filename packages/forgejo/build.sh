@@ -7,7 +7,7 @@
 # and package with the git dependency + dedicated-user + shared-folder
 # wizard the real package uses.
 #
-# Run on an x86_64 Linux host with Go >= 1.24, Node >= 20, `make`, gcc
+# Run on an x86_64 Linux host with Go >= 1.26, Node >= 20, `make`, gcc
 # (CGO_ENABLED=1) -- no cross-compilation.
 #
 # Usage:
