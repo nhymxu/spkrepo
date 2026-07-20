@@ -1,0 +1,17 @@
+name: Build Gitea package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Gitea version to build, e.g. 1.26.2 (must match an upstream v<version> release)"
+        required: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-package.yml
+    with:
+      package: gitea
+      version: ${{ inputs.version }}
+    permissions:
+      contents: write

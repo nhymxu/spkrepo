@@ -4,6 +4,15 @@ Support only DSM 7 x86_64
 
 Tested on DSM 7.2
 
+`packages/` holds `.spk` build pipelines for specific apps (build from
+source, cut a release, publish into `data/packages.json`):
+[`packages/forgejo/`](packages/forgejo/README.md) and
+[`packages/gitea/`](packages/gitea/README.md). Generic DSM7 packaging
+scripts shared by every app live in
+[`packages/_shared/spksrc-service/`](packages/_shared/spksrc-service/NOTICE.md);
+each app's own build/release/publish CI dispatches into the shared
+reusable workflow `.github/workflows/build-package.yml`.
+
 ## Static site deployment
 
 Renders the catalog to a single static JSON file for hosts with no
@@ -93,3 +102,15 @@ so it can be copied straight into whatever *other* project builds your
 to a running server's write API) and `--write-index PATH` (upsert into a
 local static index file) are independent output modes -- use whichever
 matches the deployment you picked.
+
+## Credits
+
+[`SynoCommunity/spksrc`](https://github.com/SynoCommunity/spksrc) is the
+reference this repo's `packages/forgejo/` and `packages/gitea/` build
+recipes are modeled on (source fetch, build tags/ldflags, `conf.ini`
+template, install wizard) -- both apps are also packaged there under
+`spk/forgejo/` and `spk/gitea/`. `packages/_shared/spksrc-service/`
+additionally vendors `functions`, `installer.dsm7`, and
+`start-stop-status` **verbatim** from spksrc's `mk/spksrc.service/`
+(3-clause BSD, Copyright (c) 2011 Sebastien Erard -- full license text
+in that directory's `NOTICE.md`).

@@ -1,0 +1,67 @@
+name: Build package (reusable)
+
+# Shared build->release->publish pipeline for every app under packages/.
+# Called by the thin per-app dispatch workflows (build-forgejo.yml,
+# build-gitea.yml, ...) -- not meant to be run directly.
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: "Directory name under packages/, e.g. forgejo"
+        required: true
+        type: string
+      version:
+        description: "App version to build, e.g. 15.0.4"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Enable corepack (for packages whose frontend build pins a pnpm version)
+        run: corepack enable
+
+      - name: Build .spk
+        id: build
+        run: |
+          packages/${{ inputs.package }}/build.sh --version "${{ inputs.version }}"
+          echo "spk_path=packages/${{ inputs.package }}/dist/${{ inputs.package }}-${{ inputs.version }}-x86_64.spk" >> "$GITHUB_OUTPUT"
+
+      - name: Create release and upload .spk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.package }}-v${{ inputs.version }}" \
+            "${{ steps.build.outputs.spk_path }}" \
+            --title "${{ inputs.package }} v${{ inputs.version }}" \
+            --notes "${{ inputs.package }} v${{ inputs.version }}, built from source for DSM7 x86_64."
+
+      - name: Update catalog index
+        run: |
+          asset_url="https://github.com/${{ github.repository }}/releases/download/${{ inputs.package }}-v${{ inputs.version }}/${{ inputs.package }}-${{ inputs.version }}-x86_64.spk"
+          python3 tools/spk_to_payload.py "${{ steps.build.outputs.spk_path }}" \
+            --link "$asset_url" \
+            --write-index data/packages.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/packages.json
+          git commit -m "feat: publish ${{ inputs.package }} v${{ inputs.version }}"
+          git push

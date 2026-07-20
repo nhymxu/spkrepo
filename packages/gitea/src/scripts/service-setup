@@ -1,0 +1,30 @@
+# Gitea-specific variables sourced by installer.dsm7 and start-stop-status
+# (both look for "$(dirname $0)/service-setup", i.e. this file must live
+# next to the shared scripts copied from packages/_shared/spksrc-service/
+# at build time). DSM7-only.
+
+SERVICE_PORT=8418
+GITEA="${SYNOPKG_PKGDEST}/bin/gitea"
+CFG_FILE="${SYNOPKG_PKGVAR}/conf.ini"
+PID_FILE="${SYNOPKG_PKGVAR}/gitea.pid"
+LOG_FILE="${SYNOPKG_PKGVAR}/gitea.log"
+
+# Gitea shells out to `git` for every repository operation -- depends on
+# the separately-installed "Git Server" package (INFO's
+# install_dep_packages="git>=2").
+PATH="/var/packages/git/target/bin:${PATH}"
+
+ENV="PATH=${PATH} HOME=${SYNOPKG_PKGHOME}"
+SERVICE_COMMAND="env ${ENV} ${GITEA} web --port ${SERVICE_PORT} --pid ${PID_FILE}"
+SVC_BACKGROUND=y
+
+service_postinst()
+{
+    if [ "${SYNOPKG_PKG_STATUS}" = "INSTALL" ]; then
+        IP=$(ip route get 1 | awk '{print $(NF);exit}')
+
+        sed -i -e "s|@share_path@|${SHARE_PATH}|g" "${CFG_FILE}"
+        sed -i -e "s|@ip_address@|${IP:=localhost}|g" "${CFG_FILE}"
+        sed -i -e "s|@service_port@|${SERVICE_PORT}|g" "${CFG_FILE}"
+    fi
+}

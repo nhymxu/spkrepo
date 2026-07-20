@@ -1,0 +1,17 @@
+name: Build Forgejo package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Forgejo version to build, e.g. 15.0.4 (must match an upstream v<version> release)"
+        required: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-package.yml
+    with:
+      package: forgejo
+      version: ${{ inputs.version }}
+    permissions:
+      contents: write

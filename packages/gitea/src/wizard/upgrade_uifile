@@ -1,0 +1,16 @@
+[
+    {
+        "step_title": "Updating Gitea",
+        "items": [
+            {
+                "desc": "Please be aware that the configuration file may require some manual adjustments."
+            },
+            {
+                "desc": "Check the Gitea admin panel after upgrade and adjust <b>/var/packages/gitea/var/conf.ini</b> as needed."
+            },
+            {
+                "desc": "Remember to restart the Gitea package afterwards."
+            }
+        ]
+    }
+]

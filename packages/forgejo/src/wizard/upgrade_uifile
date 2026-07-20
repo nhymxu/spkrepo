@@ -1,0 +1,16 @@
+[
+    {
+        "step_title": "Updating Forgejo",
+        "items": [
+            {
+                "desc": "Please be aware that the configuration file may require some manual adjustments."
+            },
+            {
+                "desc": "Check the Forgejo admin panel after upgrade and adjust <b>/var/packages/forgejo/var/conf.ini</b> as needed."
+            },
+            {
+                "desc": "Remember to restart the Forgejo package afterwards."
+            }
+        ]
+    }
+]
