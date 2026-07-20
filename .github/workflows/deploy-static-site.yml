@@ -8,6 +8,8 @@ on:
       - "tools/dsm_catalog.py"
       - "tools/render_static_catalog.py"
       - "tools/render_static_page.py"
+      - "packages/*/icon_72.png"
+      - "packages/*/icon_256.png"
       - ".github/workflows/deploy-static-site.yml"
   workflow_dispatch: {}
 
@@ -51,6 +53,15 @@ jobs:
 
       - name: Render info page
         run: python3 tools/render_static_page.py --arch "${{ vars.SPK_ARCH }}" --build "${{ vars.SPK_BUILD }}" --out dist/index.html
+
+      - name: Copy package icons
+        run: |
+          mkdir -p dist/icons
+          for pkg_dir in packages/*/; do
+            pkg="$(basename "$pkg_dir")"
+            [ -f "${pkg_dir}icon_72.png" ] && cp "${pkg_dir}icon_72.png" "dist/icons/${pkg}-72.png"
+            [ -f "${pkg_dir}icon_256.png" ] && cp "${pkg_dir}icon_256.png" "dist/icons/${pkg}-256.png"
+          done
 
       - uses: actions/configure-pages@v6
 

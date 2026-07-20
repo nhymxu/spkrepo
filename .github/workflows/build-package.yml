@@ -69,7 +69,7 @@ jobs:
           echo "pkg_version=${pkg_version}" >> "$GITHUB_OUTPUT"
           echo "spk_path=packages/${{ inputs.package }}/dist/${{ inputs.package }}-${pkg_version}-x86_64.spk" >> "$GITHUB_OUTPUT"
 
-      - name: Create release and upload .spk + icons
+      - name: Create release and upload .spk
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -77,26 +77,27 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release delete "$tag" --yes --cleanup-tag
           fi
-          assets=("${{ steps.build.outputs.spk_path }}")
-          [ -f "packages/${{ inputs.package }}/icon_72.png" ] && assets+=("packages/${{ inputs.package }}/icon_72.png")
-          [ -f "packages/${{ inputs.package }}/icon_256.png" ] && assets+=("packages/${{ inputs.package }}/icon_256.png")
           gh release create "$tag" \
-            "${assets[@]}" \
+            "${{ steps.build.outputs.spk_path }}" \
             --title "${{ inputs.package }} v${{ steps.build.outputs.pkg_version }}" \
             --notes "${{ inputs.package }} v${{ steps.build.outputs.pkg_version }}, built from source for DSM7 x86_64."
 
       - name: Update catalog index
         run: |
-          base_url="https://github.com/${{ github.repository }}/releases/download/${{ inputs.package }}-v${{ steps.build.outputs.pkg_version }}"
+          # Icons are served from GitHub Pages (deploy-static-site.yml copies
+          # packages/<pkg>/icon_*.png into dist/icons/), not Release assets --
+          # only the .spk binary lives on the Release.
+          release_base_url="https://github.com/${{ github.repository }}/releases/download/${{ inputs.package }}-v${{ steps.build.outputs.pkg_version }}"
+          pages_base_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/icons"
           thumbnail_args=()
           if [ -f "packages/${{ inputs.package }}/icon_72.png" ]; then
-            thumbnail_args+=(--thumbnail "$base_url/icon_72.png")
+            thumbnail_args+=(--thumbnail "$pages_base_url/${{ inputs.package }}-72.png")
           fi
           if [ -f "packages/${{ inputs.package }}/icon_256.png" ]; then
-            thumbnail_args+=(--thumbnail-retina "$base_url/icon_256.png")
+            thumbnail_args+=(--thumbnail-retina "$pages_base_url/${{ inputs.package }}-256.png")
           fi
           python3 tools/spk_to_payload.py "${{ steps.build.outputs.spk_path }}" \
-            --link "$base_url/${{ inputs.package }}-${{ steps.build.outputs.pkg_version }}-x86_64.spk" \
+            --link "$release_base_url/${{ inputs.package }}-${{ steps.build.outputs.pkg_version }}-x86_64.spk" \
             "${thumbnail_args[@]}" \
             --write-index data/packages.json
 

@@ -35,8 +35,8 @@ Functions, S3, ...).
 ```bash
 python3 tools/spk_to_payload.py package.spk \
   --link https://github.com/you/repo/releases/download/v1/package.spk \
-  --thumbnail https://github.com/you/repo/releases/download/v1/icon72.png \
-  --thumbnail-retina https://github.com/you/repo/releases/download/v1/icon256.png \
+  --thumbnail https://you.github.io/repo/icons/package-72.png \
+  --thumbnail-retina https://you.github.io/repo/icons/package-256.png \
   --write-index data/packages.json
 git add data/packages.json
 git commit -m "feat: publish package v1"
@@ -77,6 +77,14 @@ GitHub Pages serves `index.html` at `https://<user>.github.io/<repo>/`
 for browsers -- point DSM's Package Source "Location" at
 `https://<user>.github.io/<repo>/index.json` explicitly so it keeps
 getting the JSON catalog instead of the info page.
+
+The same deploy also copies each package's `icon_72.png`/`icon_256.png`
+(from `packages/<app>/`) into `dist/icons/<app>-72.png` /
+`dist/icons/<app>-256.png`, so package icons are served from GitHub
+Pages instead of Release assets -- `build-package.yml` writes
+`thumbnail`/`thumbnail_retina` in `data/packages.json` as
+`https://<user>.github.io/<repo>/icons/<app>-72.png` (and `-256.png`)
+accordingly. Release assets only carry the `.spk` binary.
 
 ### Deploy: Cloudflare Pages
 
