@@ -18,6 +18,16 @@ ENV="PATH=${PATH} HOME=${SYNOPKG_PKGHOME}"
 SERVICE_COMMAND="env ${ENV} ${GITEA} web --port ${SERVICE_PORT} --pid ${PID_FILE}"
 SVC_BACKGROUND=y
 
+# Bind the wizard-chosen shared folder (created by the data-share resource
+# worker) to the SHARE_NAME/SHARE_PATH the generic installer expects. On DSM7
+# a package data-share is linked under /var/packages/<pkg>/shares/<name>.
+# Only set on fresh install, when the wizard variable is exported; on upgrade
+# these are restored from installer-variables by load_variables_from_file.
+if [ -n "${wizard_shared_folder_name}" ]; then
+    SHARE_NAME="${wizard_shared_folder_name}"
+    SHARE_PATH="/var/packages/${SYNOPKG_PKGNAME}/shares/${wizard_shared_folder_name}"
+fi
+
 service_postinst()
 {
     if [ "${SYNOPKG_PKG_STATUS}" = "INSTALL" ]; then

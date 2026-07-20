@@ -90,13 +90,18 @@ new copy of the whole pipeline. The reusable workflow:
 
 ## Known simplifications and open risks
 
-- **Not yet verified on a real DSM7 NAS.** Two things in particular are
-  best-effort reconstructions rather than confirmed-correct: the exact
-  `conf/resource` syntax for binding the wizard's chosen share name to
-  the `data-share` declaration, and whether the pre-seeded `conf.ini`
-  alone (without an explicit `INSTALL_LOCK` setting) fully suppresses
-  Forgejo's own first-run web installer. Please test an actual install
-  and report back if either needs adjusting.
+- **`conf/resource` share binding** now matches SynoCommunity's proven
+  syntax: the `data-share` name uses DSM's `{{wizard_shared_folder_name}}`
+  template placeholder (not shell `${...}`, which DSM passes through
+  literally -- the cause of the "Unable to create a shared folder named
+  ${wizard_shared_folder_name}" install error), and `permission.rw` lists
+  the package account by literal name (`forgejo`). `service-setup` derives
+  `SHARE_PATH` (`/var/packages/<pkg>/shares/<name>`) so the `@share_path@`
+  seed in `conf.ini` resolves.
+- **`conf.ini` first-run suppression not yet verified on a real DSM7 NAS**
+  -- whether the pre-seeded `conf.ini` alone (without an explicit
+  `INSTALL_LOCK` setting) fully suppresses Forgejo's own first-run web
+  installer. Please test an actual install and report back.
 - `LOG_FILE`/`PID_FILE` defaults in `service-setup` are our own explicit
   choices (consistent with the paths spksrc's build embeds via ldflags)
   -- the real package's `service-setup.sh` excerpt we found didn't show
