@@ -81,6 +81,31 @@ spk_stage_package() {
     cp -R "${SCRIPT_DIR}/src/wizard" "${STAGE_DIR}/WIZARD_UIFILES"
 }
 
+# Appends the DSM Package Center icon fields to STAGE_DIR/INFO. DSM reads the
+# *installed* package's thumbnail (SYNO.Core.Package.Thumb) from these base64
+# PNGs in INFO -- not from the catalog's thumbnail URL, which only covers the
+# Community browse view. package_icon must be 72x72, package_icon_256 256x256.
+# base64 must be single-line (DSM parses INFO one key="value" per line).
+# Reads icon_72.png / icon_256.png from SCRIPT_DIR; requires both to exist.
+spk_append_icons() {
+    local icon_72="${SCRIPT_DIR}/icon_72.png"
+    local icon_256="${SCRIPT_DIR}/icon_256.png"
+    local f
+    for f in "${icon_72}" "${icon_256}"; do
+        if [ ! -f "${f}" ]; then
+            echo "missing required icon: ${f}" >&2
+            exit 1
+        fi
+    done
+    # Read via stdin and strip newlines so it's single-line on both GNU
+    # (wraps at 76 cols) and BSD/macOS base64 -- neither takes a positional
+    # filename portably, and GNU's -w0 flag is unknown to BSD.
+    {
+        printf 'package_icon="%s"\n' "$(base64 <"${icon_72}" | tr -d '\n')"
+        printf 'package_icon_256="%s"\n' "$(base64 <"${icon_256}" | tr -d '\n')"
+    } >>"${STAGE_DIR}/INFO"
+}
+
 # Tars STAGE_DIR (which must already contain INFO, written by the caller)
 # into the final .spk under OUT_DIR. Requires OUT_DIR, STAGE_DIR,
 # PKG_VERSION set by the caller.

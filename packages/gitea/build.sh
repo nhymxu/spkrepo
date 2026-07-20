@@ -83,4 +83,6 @@ install_dep_packages="git>=2"
 startable="yes"
 EOF
 
+spk_append_icons
+
 spk_write_archive "gitea"
