@@ -22,35 +22,43 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA = ROOT / "data" / "packages.json"
 
 PAGE_TEMPLATE = """<!doctype html>
-<html lang="en">
+<html lang="en" style="color-scheme: light;">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>{title}</title>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-         max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1b1f23; }}
+         max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1b1f23; background: #ffffff; }}
   h1 {{ font-size: 1.5rem; }}
+  h2.section {{ font-size: 1.1rem; margin-top: 2rem; }}
   code {{ background: #f0f0f0; padding: 0.1rem 0.35rem; border-radius: 3px; }}
+  .guide {{ border: 1px solid #d0d7de; border-radius: 6px; padding: 1rem 1.25rem; background: #f6f8fa; }}
+  .guide ol {{ margin: 0; padding-left: 1.25rem; }}
+  .guide li {{ margin: 0.5rem 0; }}
   .pkg {{ border: 1px solid #d0d7de; border-radius: 6px; padding: 1rem; margin: 1rem 0; }}
   .pkg h2 {{ margin: 0 0 0.25rem; font-size: 1.1rem; }}
   .pkg .meta {{ color: #57606a; font-size: 0.85rem; margin-bottom: 0.5rem; }}
   .empty {{ color: #57606a; }}
   footer {{ margin-top: 2rem; color: #57606a; font-size: 0.85rem; }}
-  @media (prefers-color-scheme: dark) {{
-    body {{ background: #0d1117; color: #c9d1d9; }}
-    code {{ background: #21262d; }}
-    .pkg {{ border-color: #30363d; }}
-    .meta, .empty, footer {{ color: #8b949e; }}
-    a {{ color: #58a6ff; }}
-  }}
 </style>
 </head>
 <body>
 <h1>{title}</h1>
-<p>Synology DSM 7 package repository. Add it in Package Center &rarr;
-Settings &rarr; Package Sources with Location
-<code>{index_url}</code>.</p>
+<p>Synology DSM 7 package repository.</p>
+<h2 class="section">Quick guide: add this source to Package Center</h2>
+<div class="guide">
+<ol>
+  <li>Open <strong>Package Center</strong> on your NAS.</li>
+  <li>Go to <strong>Settings</strong> &rarr; <strong>Package Sources</strong> &rarr; <strong>Add</strong>.</li>
+  <li><strong>Name:</strong> anything you like.</li>
+  <li><strong>Location:</strong> <code>{index_url}</code> &mdash; use this exact URL,
+      not the page you are viewing now.</li>
+  <li>Click <strong>Save</strong>, then find the packages under the
+      <strong>Community</strong> tab of Package Center.</li>
+</ol>
+</div>
 {packages_html}
 <footer>Machine-readable catalog: <a href="index.json">index.json</a></footer>
 </body>
