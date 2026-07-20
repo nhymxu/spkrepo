@@ -20,38 +20,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHARED_DIR="${SCRIPT_DIR}/../_shared/spksrc-service"
-OS_MIN_VER="7.0-40000"
-OUT_DIR="${SCRIPT_DIR}/dist"
-VERSION=""
+# shellcheck source=../_shared/spk-package.sh
+source "${SCRIPT_DIR}/../_shared/spk-package.sh"
 
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --version)
-            VERSION="$2"
-            shift 2
-            ;;
-        --os-min-ver)
-            OS_MIN_VER="$2"
-            shift 2
-            ;;
-        --out)
-            OUT_DIR="$2"
-            shift 2
-            ;;
-        *)
-            echo "unknown argument: $1" >&2
-            exit 1
-            ;;
-    esac
-done
-
-if [ -z "${VERSION}" ]; then
-    echo "usage: build.sh --version X.Y.Z [--os-min-ver 7.0-40000] [--out DIR]" >&2
-    exit 1
-fi
+spk_parse_build_args "$@"
 
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "${WORK_DIR}"' EXIT
+STAGE_DIR="${WORK_DIR}/stage"
+PAYLOAD_DIR="${WORK_DIR}/payload"
 
 SRC_DIR="${WORK_DIR}/gitea-${VERSION}"
 TARBALL="${WORK_DIR}/gitea-${VERSION}.tar.gz"
@@ -91,29 +68,7 @@ if [ ! -x "${BINARY}" ]; then
     exit 1
 fi
 
-STAGE_DIR="${WORK_DIR}/stage"
-PAYLOAD_DIR="${WORK_DIR}/payload"
-mkdir -p "${STAGE_DIR}" "${PAYLOAD_DIR}/bin" "${PAYLOAD_DIR}/var"
-
-cp "${BINARY}" "${PAYLOAD_DIR}/bin/gitea"
-chmod +x "${PAYLOAD_DIR}/bin/gitea"
-cp "${SCRIPT_DIR}/src/conf.ini" "${PAYLOAD_DIR}/var/conf.ini"
-tar czf "${STAGE_DIR}/package.tgz" -C "${PAYLOAD_DIR}" bin var
-
-# Generic DSM7 lifecycle scripts, shared verbatim across every package
-# under packages/ (see packages/_shared/spksrc-service/NOTICE.md), plus
-# this package's own service-setup.
-mkdir -p "${STAGE_DIR}/scripts"
-cp "${SHARED_DIR}/"* "${STAGE_DIR}/scripts/"
-rm -f "${STAGE_DIR}/scripts/NOTICE.md"
-cp "${SCRIPT_DIR}/src/scripts/service-setup" "${STAGE_DIR}/scripts/service-setup"
-chmod +x "${STAGE_DIR}/scripts/"preinst "${STAGE_DIR}/scripts/"postinst \
-    "${STAGE_DIR}/scripts/"preuninst "${STAGE_DIR}/scripts/"postuninst \
-    "${STAGE_DIR}/scripts/"preupgrade "${STAGE_DIR}/scripts/"postupgrade \
-    "${STAGE_DIR}/scripts/start-stop-status" "${STAGE_DIR}/scripts/installer.dsm7"
-
-cp -R "${SCRIPT_DIR}/src/conf" "${STAGE_DIR}/conf"
-cp -R "${SCRIPT_DIR}/src/wizard" "${STAGE_DIR}/wizard"
+spk_stage_package "${BINARY}" "gitea"
 
 cat >"${STAGE_DIR}/INFO" <<EOF
 package="gitea"
@@ -128,8 +83,4 @@ install_dep_packages="git>=2"
 startable="yes"
 EOF
 
-mkdir -p "${OUT_DIR}"
-SPK_PATH="${OUT_DIR}/gitea-${VERSION}-x86_64.spk"
-tar cf "${SPK_PATH}" -C "${STAGE_DIR}" INFO package.tgz scripts conf wizard
-
-echo "wrote ${SPK_PATH}"
+spk_write_archive "gitea"
