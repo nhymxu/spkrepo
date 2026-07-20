@@ -1,7 +1,6 @@
 # Forgejo-specific variables sourced by installer.dsm7 and start-stop-status
 # (both look for "$(dirname $0)/service-setup", i.e. this file must live
-# next to them in scripts/). DSM7-only, unlike upstream spksrc which also
-# supports DSM5/6.
+# next to them in scripts/). DSM7-only.
 
 SERVICE_PORT=8620
 GITEA="${SYNOPKG_PKGDEST}/bin/gitea"
