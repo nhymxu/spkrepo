@@ -60,6 +60,7 @@ jobs:
 
       - name: Commit and push
         run: |
+          cat data/packages.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/packages.json
