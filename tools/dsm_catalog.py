@@ -72,8 +72,6 @@ def _build_package_dict(entry: dict[str, Any]) -> dict[str, Any]:
         "qinst": not has_install_wizard,
         "qupgrade": not has_upgrade_wizard,
         "qstart": entry["startable"] and not has_install_wizard,
-        "download_count": 0,
-        "recent_download_count": 0,
         "snapshot": [],
     }
 
