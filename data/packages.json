@@ -10,11 +10,11 @@
       "os_max_build": null,
       "displayname": "Forgejo",
       "description": "Self-hosted lightweight Git forge, built from source at codeberg.org/forgejo/forgejo.",
-      "maintainer": "synology-marketplace",
+      "maintainer": "Dung Nguyen (nhymxu)",
       "maintainer_url": "https://github.com/nhymxu/spkrepo",
       "distributor": "",
       "distributor_url": "",
-      "changelog": "",
+      "changelog": "Upgrade to v16.0.0",
       "deppkgs": [
         "git>=2"
       ],
