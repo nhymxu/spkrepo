@@ -15,10 +15,8 @@
       "distributor": "",
       "distributor_url": "",
       "changelog": "",
-      "deppkgs": [
-        "git>=2"
-      ],
-      "conflictpkgs": [],
+      "deppkgs": "git>=2",
+      "conflictpkgs": "",
       "startable": true,
       "install_wizard": true,
       "upgrade_wizard": true,

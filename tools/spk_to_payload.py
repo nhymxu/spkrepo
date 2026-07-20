@@ -48,12 +48,6 @@ def parse_os_build(value: str | None) -> int | None:
         return None
 
 
-def split_list(value: str | None) -> list[str]:
-    if not value:
-        return []
-    return [item for item in value.replace(",", " ").split() if item]
-
-
 def read_info(spk_path: Path) -> dict:
     with tarfile.open(spk_path, mode="r:") as tar:
         info_member = tar.extractfile("INFO")
@@ -115,8 +109,8 @@ def build_payload(spk_path: Path, link: str, thumbnail: str | None, thumbnail_re
         "distributor": info.get("distributor", ""),
         "distributor_url": info.get("distributor_url", ""),
         "changelog": info.get("changelog", ""),
-        "deppkgs": split_list(info.get("install_dep_packages")),
-        "conflictpkgs": split_list(info.get("install_conflict_packages")),
+        "deppkgs": info.get("install_dep_packages", ""),
+        "conflictpkgs": info.get("install_conflict_packages", ""),
         "startable": info.get("startable") != "no" and info.get("ctl_stop") != "no",
         "install_wizard": has_wizard_file(spk_path, "install_uifile"),
         "upgrade_wizard": has_wizard_file(spk_path, "upgrade_uifile"),
