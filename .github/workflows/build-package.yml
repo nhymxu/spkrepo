@@ -62,7 +62,7 @@ jobs:
           packages/${{ inputs.package }}/build.sh --version "${{ inputs.version }}"
           echo "spk_path=packages/${{ inputs.package }}/dist/${{ inputs.package }}-${{ inputs.version }}-x86_64.spk" >> "$GITHUB_OUTPUT"
 
-      - name: Create release and upload .spk
+      - name: Create release and upload .spk + icons
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -70,16 +70,27 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release delete "$tag" --yes --cleanup-tag
           fi
+          assets=("${{ steps.build.outputs.spk_path }}")
+          [ -f "packages/${{ inputs.package }}/icon_72.png" ] && assets+=("packages/${{ inputs.package }}/icon_72.png")
+          [ -f "packages/${{ inputs.package }}/icon_256.png" ] && assets+=("packages/${{ inputs.package }}/icon_256.png")
           gh release create "$tag" \
-            "${{ steps.build.outputs.spk_path }}" \
+            "${assets[@]}" \
             --title "${{ inputs.package }} v${{ inputs.version }}" \
             --notes "${{ inputs.package }} v${{ inputs.version }}, built from source for DSM7 x86_64."
 
       - name: Update catalog index
         run: |
-          asset_url="https://github.com/${{ github.repository }}/releases/download/${{ inputs.package }}-v${{ inputs.version }}/${{ inputs.package }}-${{ inputs.version }}-x86_64.spk"
+          base_url="https://github.com/${{ github.repository }}/releases/download/${{ inputs.package }}-v${{ inputs.version }}"
+          thumbnail_args=()
+          if [ -f "packages/${{ inputs.package }}/icon_72.png" ]; then
+            thumbnail_args+=(--thumbnail "$base_url/icon_72.png")
+          fi
+          if [ -f "packages/${{ inputs.package }}/icon_256.png" ]; then
+            thumbnail_args+=(--thumbnail-retina "$base_url/icon_256.png")
+          fi
           python3 tools/spk_to_payload.py "${{ steps.build.outputs.spk_path }}" \
-            --link "$asset_url" \
+            --link "$base_url/${{ inputs.package }}-${{ inputs.version }}-x86_64.spk" \
+            "${thumbnail_args[@]}" \
             --write-index data/packages.json
 
       - name: Commit and push

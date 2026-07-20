@@ -23,8 +23,12 @@
       "link": "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/forgejo-16.0.0-x86_64.spk",
       "md5": "4ba0e59bd75e312216c65785c62c581a",
       "size": 46223360,
-      "thumbnail": [],
-      "thumbnail_retina": []
+      "thumbnail": [
+        "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/icon_72.png"
+      ],
+      "thumbnail_retina": [
+        "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/icon_256.png"
+      ]
     }
   ]
 }
