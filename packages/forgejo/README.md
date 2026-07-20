@@ -69,9 +69,10 @@ sources -- **not** all forgejo-specific:
   `/var/packages/git/target/bin` (Forgejo needs `git` on `PATH` for
   every repo operation), `service_postinst()` substituting
   `@share_path@`/`@ip_address@`/`@service_port@` into `conf.ini`.
-- **`conf/privilege`** -- `{"defaults": {"run-as": "package"}}`, so DSM
-  runs this package under its own dedicated service account instead of
-  root.
+- **`conf/privilege`** -- `run-as: package` under a dedicated service
+  account `sc-forgejo` (username kept identical to SynoCommunity's package
+  so its existing data, owned `sc-forgejo:*`, stays accessible without a
+  re-chown) in group `nhymxu-pkg` (shared by every package in this repo).
 - **`conf/resource`** -- declares/creates a shared folder (named via the
   install wizard) and grants the package's account read-write access.
 - **`wizard/install_uifile`, `upgrade_uifile`** -- installer asks for a
@@ -107,7 +108,7 @@ new copy of the whole pipeline. The reusable workflow:
   template placeholder (not shell `${...}`, which DSM passes through
   literally -- the cause of the "Unable to create a shared folder named
   ${wizard_shared_folder_name}" install error), and `permission.rw` lists
-  the package account by literal name (`forgejo`). `service-setup` derives
+  the package account by literal name (`sc-forgejo`). `service-setup` derives
   `SHARE_PATH` (`/var/packages/<pkg>/shares/<name>`) so the `@share_path@`
   seed in `conf.ini` resolves.
 - **`conf.ini` first-run suppression not yet verified on a real DSM7 NAS**
