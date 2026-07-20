@@ -43,6 +43,7 @@ Minimal track:
 ```
 packages/<app>/
   build.sh
+  build.requires        # optional, only if build.sh needs go and/or node
   src/
     scripts/
       start-stop-status
@@ -63,6 +64,7 @@ packages/_shared/spksrc-service/    # shared by every package, create once
 
 packages/<app>/
   build.sh
+  build.requires        # optional, only if build.sh needs go and/or node
   src/
     scripts/
       service-setup          # the only script that's actually app-specific
@@ -149,7 +151,8 @@ for a complete worked example of this track.
 `.github/workflows/build-package.yml` is a **reusable** workflow
 (`workflow_call`, inputs `package` and `version`) that does the whole
 build → release → publish → commit pipeline generically: checkout →
-setup Go/Node/corepack → run `packages/<package>/build.sh --version
+detect + set up whichever of Go/Node/corepack `build.requires` declares
+→ run `packages/<package>/build.sh --version
 <version>` → `gh release create <package>-v<version> <spk> --title ...
 --notes ...` → compute the deterministic asset download URL →
 `python3 tools/spk_to_payload.py <spk> --link <url> --write-index
@@ -178,11 +181,18 @@ jobs:
       contents: write
 ```
 
+`build-package.yml` only sets up the toolchains a package actually
+declares: it reads `packages/<app>/build.requires` (one toolchain name
+per line, e.g. `go` / `node`) and skips `setup-go`/`setup-node`/
+`corepack enable` entirely when the file omits or doesn't list them --
+so a prebuilt-binary app (step 1) needs no `build.requires` file at all.
+Add one alongside `build.sh` listing whichever of `go`/`node` your build
+needs (see `packages/forgejo/build.requires` /
+`packages/gitea/build.requires`).
+
 Only touch `build-package.yml` itself if the *generic* pipeline logic
 needs to change for every app at once (e.g. bumping the Go/Node
-version). If a new app needs an extra toolchain step, add it there
-guarded to be a no-op for apps that don't need it (like
-`corepack enable`, harmless for packages that don't use pnpm).
+version, or adding support for a new toolchain name).
 
 ## 7. Link it from the root README
 

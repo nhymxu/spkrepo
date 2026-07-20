@@ -25,15 +25,35 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Each packages/<app>/build.requires lists the toolchains that
+      # package's build.sh needs (one per line: go, node) -- apps with a
+      # prebuilt-binary build.sh (see docs/add-new-app-guide.md) can omit
+      # the file entirely and skip every toolchain step below.
+      - name: Detect build requirements
+        id: requires
+        run: |
+          requires_file="packages/${{ inputs.package }}/build.requires"
+          needs_go=false
+          needs_node=false
+          if [ -f "${requires_file}" ]; then
+            if grep -qx "go" "${requires_file}"; then needs_go=true; fi
+            if grep -qx "node" "${requires_file}"; then needs_node=true; fi
+          fi
+          echo "go=${needs_go}" >> "$GITHUB_OUTPUT"
+          echo "node=${needs_node}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-go@v7
+        if: steps.requires.outputs.go == 'true'
         with:
           go-version: "1.26"
 
       - uses: actions/setup-node@v7
+        if: steps.requires.outputs.node == 'true'
         with:
           node-version: "24"
 
       - name: Enable corepack (for packages whose frontend build pins a pnpm version)
+        if: steps.requires.outputs.node == 'true'
         run: corepack enable
 
       - name: Build .spk
