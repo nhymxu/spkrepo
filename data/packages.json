@@ -1,1 +1,30 @@
-{}
+{
+  "forgejo": [
+    {
+      "package": "forgejo",
+      "version": "16.0.0",
+      "archs": [
+        "x86_64"
+      ],
+      "os_min_build": 40000,
+      "os_max_build": null,
+      "displayname": "Forgejo",
+      "description": "Self-hosted lightweight Git forge, built from source at codeberg.org/forgejo/forgejo.",
+      "maintainer": "synology-marketplace",
+      "maintainer_url": "https://github.com/nhymxu/spkrepo",
+      "distributor": "",
+      "distributor_url": "",
+      "changelog": "",
+      "deppkgs": [
+        "git>=2"
+      ],
+      "conflictpkgs": [],
+      "startable": true,
+      "link": "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/forgejo-16.0.0-x86_64.spk",
+      "md5": "4ba0e59bd75e312216c65785c62c581a",
+      "size": 46223360,
+      "thumbnail": [],
+      "thumbnail_retina": []
+    }
+  ]
+}
