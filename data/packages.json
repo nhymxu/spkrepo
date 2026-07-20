@@ -21,7 +21,7 @@
       "install_wizard": true,
       "upgrade_wizard": true,
       "link": "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/forgejo-16.0.0-x86_64.spk",
-      "md5": "30228b2453a736bc5c311f986d4ea7b5",
+      "md5": "82e0806cd729b90d73dee29d98b91b02",
       "size": 46223360,
       "thumbnail": [
         "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.0/icon_72.png"
