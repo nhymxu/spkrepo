@@ -70,12 +70,15 @@ def _build_package_dict(entry: dict[str, Any]) -> dict[str, Any]:
         "qinst": True,
         "qupgrade": True,
         "qstart": entry["startable"],
-        "deppkgs": entry["deppkgs"] or None,
-        "conflictpkgs": entry["conflictpkgs"] or None,
         "download_count": 0,
         "recent_download_count": 0,
         "snapshot": [],
     }
+
+    if entry["deppkgs"]:
+        result["deppkgs"] = entry["deppkgs"]
+    if entry["conflictpkgs"]:
+        result["conflictpkgs"] = entry["conflictpkgs"]
 
     if entry["thumbnail_retina"]:
         result["thumbnail_retina"] = entry["thumbnail_retina"]
