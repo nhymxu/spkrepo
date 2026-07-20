@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+future-deployments/python-server/.venv/
+future-deployments/python-server/data/packages.json
+future-deployments/python-server/data/*.tmp
+future-deployments/cloudflare-worker/node_modules/
+future-deployments/cloudflare-worker/.wrangler/
+dist/

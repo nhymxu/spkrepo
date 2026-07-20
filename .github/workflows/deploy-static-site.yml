@@ -1,0 +1,46 @@
+name: Deploy static site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "tools/dsm_catalog.py"
+      - "tools/render_static_catalog.py"
+      - ".github/workflows/deploy-static-site.yml"
+  workflow_dispatch: {}
+
+# Set these in Settings -> Secrets and variables -> Actions -> Variables:
+#   SPK_ARCH  e.g. x86_64 (must match the single arch your fleet reports)
+#   SPK_BUILD e.g. 64570  (a DSM7 firmware build number -- see README)
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render static catalog
+        run: python3 tools/render_static_catalog.py --arch "${{ vars.SPK_ARCH }}" --build "${{ vars.SPK_BUILD }}" --out dist/index.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
