@@ -154,6 +154,37 @@
         "https://nhymxu.github.io/spkrepo/icons/forgejo-256.png",
         "https://nhymxu.github.io/spkrepo/icons/forgejo-256.png"
       ]
+    },
+    {
+      "package": "forgejo",
+      "version": "16.0.1-1",
+      "archs": [
+        "x86_64"
+      ],
+      "os_min_build": 40000,
+      "os_max_build": null,
+      "displayname": "Forgejo",
+      "description": "Self-hosted lightweight Git forge, built from source at codeberg.org/forgejo/forgejo.",
+      "maintainer": "Dung Nguyen (nhymxu)",
+      "maintainer_url": "https://github.com/nhymxu/spkrepo",
+      "distributor": "",
+      "distributor_url": "",
+      "changelog": "",
+      "deppkgs": "git>=2",
+      "conflictpkgs": "",
+      "startable": true,
+      "install_wizard": true,
+      "upgrade_wizard": true,
+      "link": "https://github.com/nhymxu/spkrepo/releases/download/forgejo-v16.0.1-1/forgejo-16.0.1-1-x86_64.spk",
+      "md5": "3b5d22e606e2e55f3b4aebe49f9b5f42",
+      "size": 46243840,
+      "thumbnail": [
+        "https://nhymxu.github.io/spkrepo/icons/forgejo-72.png"
+      ],
+      "thumbnail_retina": [
+        "https://nhymxu.github.io/spkrepo/icons/forgejo-256.png",
+        "https://nhymxu.github.io/spkrepo/icons/forgejo-256.png"
+      ]
     }
   ]
 }
