@@ -1,16 +1,16 @@
 name: Deploy static site
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "data/**"
-      - "tools/dsm_catalog.py"
-      - "tools/render_static_catalog.py"
-      - "tools/render_static_page.py"
-      - "packages/*/icon_72.png"
-      - "packages/*/icon_256.png"
-      - ".github/workflows/deploy-static-site.yml"
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "data/**"
+  #     - "tools/dsm_catalog.py"
+  #     - "tools/render_static_catalog.py"
+  #     - "tools/render_static_page.py"
+  #     - "packages/*/icon_72.png"
+  #     - "packages/*/icon_256.png"
+  #     - ".github/workflows/deploy-static-site.yml"
   workflow_dispatch: {}
 
 # Set these in Settings -> Secrets and variables -> Actions -> Variables:
