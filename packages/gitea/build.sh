@@ -68,6 +68,24 @@ LDFLAG_SYMBOLS=(
     "${GO_MODULE}/cmd.PIDFile=${PKG_VAR}/gitea.pid"
 )
 
+# Deriving the module path covers a rename of the module itself, but a -X is
+# dropped just as silently if the *variable* moves or is renamed, so confirm
+# each target resolves before trusting it. This has to happen against the
+# source: `make build` links with -s, leaving the finished binary with no
+# symbol table, and grepping that binary for the injected paths proves nothing
+# because the linker writes the -X payload in whether or not it resolved.
+# `go doc` resolves a package-level identifier specifically -- a same-named
+# struct field does not satisfy it.
+for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
+    symbol="${ldflag_symbol%%=*}"
+    if ! (cd "${SRC_DIR}" && go doc "${symbol%.*}" "${symbol##*.}" >/dev/null 2>&1); then
+        echo "ldflag target ${symbol} does not exist in ${SRC_DIR}, so the linker" >&2
+        echo "would ignore it and the package would ignore its own conf.ini." >&2
+        echo "Upstream moved or renamed it -- update LDFLAG_SYMBOLS." >&2
+        exit 1
+    fi
+done
+
 LDFLAGS=""
 for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
     LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-X \"${ldflag_symbol}\""
@@ -92,25 +110,6 @@ if [ ! -x "${BINARY}" ]; then
     echo "build did not produce an executable at ${BINARY}" >&2
     exit 1
 fi
-
-# Deriving the module path from go.mod covers a rename of the module itself,
-# but a -X is dropped just as silently if the *variable* moves or is renamed.
-# Grepping the binary for the injected paths can't detect that -- the linker
-# writes the -X payload into the binary whether or not the symbol resolved --
-# so check the symbol table, which only lists targets that really exist.
-NM_OUTPUT="${WORK_DIR}/symbols.txt"
-go tool nm "${BINARY}" >"${NM_OUTPUT}"
-for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
-    symbol="${ldflag_symbol%%=*}"
-    # Exact match on the symbol field -- a substring test would accept
-    # "...CustomConfRenamed" as proof that "...CustomConf" still exists.
-    if ! awk -v sym="${symbol}" '$NF == sym { found = 1; exit } END { exit !found }' "${NM_OUTPUT}"; then
-        echo "ldflag target ${symbol} is not in the built binary's symbol table," >&2
-        echo "so the linker silently ignored it and the package would ignore its" >&2
-        echo "own conf.ini. Upstream moved or renamed it -- update LDFLAG_SYMBOLS." >&2
-        exit 1
-    fi
-done
 
 spk_stage_package "${BINARY}" "gitea"
 
