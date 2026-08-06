@@ -93,17 +93,46 @@ build → release → `tools/spk_to_payload.py --write-index
 data/packages.json` → commit pipeline documented in
 `packages/forgejo/README.md`.
 
+## Expected behaviour worth knowing
+
+**The first-run web installer appears on first start. That is intended, not
+a packaging bug.** `INSTALL_LOCK` defaults to `false`
+(`modules/setting/setting.go:203`, `Key("INSTALL_LOCK").MustBool(false)`)
+and `cmd/web.go:275` serves the installer whenever it is unset. spksrc's own
+`spk/gitea/src/conf.ini` omits the key too -- ours matches theirs line for
+line (differing only by a trailing newline) -- so the seeded `conf.ini` is
+there to *pre-fill* the installer's defaults (repository root, domain,
+port), not to bypass it. Completing the wizard writes `INSTALL_LOCK = true`
+and it stops appearing.
+
+## Inherited from packages/forgejo/
+
+`packages/forgejo/` has been installed on a real DSM7 NAS, and the DSM7
+packaging mechanics it settled there apply unchanged here -- the lifecycle
+scripts are literally the same files from
+`packages/_shared/spksrc-service/`, and `conf/privilege`, `conf/resource`,
+the wizard and the icon embedding differ only in the package name. So the
+share-binding syntax (`{{wizard_shared_folder_name}}`, literal `sc-gitea`
+in `permission.rw`, `SHARE_PATH` derived in `service-setup`) and the
+`INFO` icon fields are not open questions here. See that README for the
+detail.
+
 ## Known simplifications and open risks
 
-Same as `packages/forgejo/README.md`'s list, read for Gitea:
-
-- `conf/resource` binds the share via DSM's `{{wizard_shared_folder_name}}`
-  placeholder with `permission.rw` naming `sc-gitea` literally; not yet
-  verified on a real DSM7 NAS.
-- Whether the pre-seeded `conf.ini` alone suppresses Gitea's own
-  first-run web installer is unverified -- please test an actual install
-  and report back.
+- **This package has never run on a DSM7 NAS.** Forgejo validates the
+  packaging shell around the binary, not the binary itself, so the one
+  thing still genuinely unverified is whether Gitea starts and reads
+  `/var/packages/gitea/var/conf.ini`. `build.sh` proves the `-X` targets
+  *resolve* (see above), which is a build-time guarantee -- it does not
+  prove the running service picks the paths up. Forgejo working in
+  production is supporting evidence for the same mechanism, not a
+  substitute for an install.
 - `LOG_FILE`/`PID_FILE` in `service-setup` are our own explicit choices,
   consistent with the paths the build embeds via ldflags.
+- SynoCommunity ships its own `gitea` package. DSM identifies a package by
+  `INFO`'s `package=` name, so on a NAS that already has theirs installed,
+  Package Center treats this one as the same package. The service account
+  name is deliberately kept as `sc-gitea` for that reason (existing
+  repository data stays accessible), but the overlap itself is untested.
 - x86_64 only; one manual build per version, no auto-update watcher for
   new upstream Gitea releases.
