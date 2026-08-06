@@ -7,7 +7,7 @@
 # with the git dependency + dedicated-user + shared-folder wizard the
 # real package uses.
 #
-# Run on an x86_64 Linux host with Go >= 1.26, Node >= 22, `make`, gcc
+# Run on an x86_64 Linux host with Go >= 1.26, Node >= 24, `make`, gcc
 # (CGO_ENABLED=1) -- no cross-compilation. Gitea's frontend build is
 # pinned to a specific pnpm version via its own package.json
 # "packageManager" field; run `corepack enable` once before this script
@@ -40,13 +40,56 @@ mkdir -p "${SRC_DIR}"
 tar xzf "${TARBALL}" -C "${SRC_DIR}" --strip-components=1
 
 # Persistent runtime paths, baked into the binary at build time (matches
-# cross/gitea/Makefile) so Gitea has sane defaults even without the env
-# vars start-stop-status also sets.
+# cross/gitea/Makefile). These are the *only* thing pointing Gitea at the
+# pre-seeded conf.ini -- service-setup passes neither --config nor
+# GITEA_WORK_DIR/GITEA_CUSTOM.
+#
+# The module path is read from go.mod instead of hardcoded: Gitea renamed its
+# module from "code.gitea.io/gitea" to "gitea.dev" in 1.27, and the Go linker
+# silently ignores a -X naming a symbol it can't resolve. A stale hardcoded
+# path would not fail the build -- it would produce a binary that quietly
+# falls back to <bindir>/custom/conf/app.ini and re-runs the web installer.
+GO_MODULE="$(awk '$1 == "module" { print $2; exit }' "${SRC_DIR}/go.mod")"
+if [ -z "${GO_MODULE}" ]; then
+    echo "could not read module path from ${SRC_DIR}/go.mod" >&2
+    exit 1
+fi
+
 PKG_VAR="/var/packages/gitea/var"
-LDFLAGS="-X \"code.gitea.io/gitea/modules/setting.CustomPath=${PKG_VAR}/custom\""
-LDFLAGS="${LDFLAGS} -X \"code.gitea.io/gitea/modules/setting.CustomConf=${PKG_VAR}/conf.ini\""
-LDFLAGS="${LDFLAGS} -X \"code.gitea.io/gitea/modules/setting.AppWorkPath=${PKG_VAR}\""
-LDFLAGS="${LDFLAGS} -X \"code.gitea.io/gitea/modules/setting.PIDFile=${PKG_VAR}/gitea.pid\""
+
+# symbol=value pairs. Note PIDFile is declared in package cmd (cmd/web.go),
+# not modules/setting -- spksrc's Makefile targets setting.PIDFile, which
+# resolves to nothing. Harmless there (service-setup passes --pid explicitly),
+# but name the symbol that actually exists.
+LDFLAG_SYMBOLS=(
+    "${GO_MODULE}/modules/setting.CustomPath=${PKG_VAR}/custom"
+    "${GO_MODULE}/modules/setting.CustomConf=${PKG_VAR}/conf.ini"
+    "${GO_MODULE}/modules/setting.AppWorkPath=${PKG_VAR}"
+    "${GO_MODULE}/cmd.PIDFile=${PKG_VAR}/gitea.pid"
+)
+
+# Deriving the module path covers a rename of the module itself, but a -X is
+# dropped just as silently if the *variable* moves or is renamed, so confirm
+# each target resolves before trusting it. This has to happen against the
+# source: `make build` links with -s, leaving the finished binary with no
+# symbol table, and grepping that binary for the injected paths proves nothing
+# because the linker writes the -X payload in whether or not it resolved.
+# `go doc` resolves a package-level identifier specifically -- a same-named
+# struct field does not satisfy it.
+for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
+    symbol="${ldflag_symbol%%=*}"
+    if ! (cd "${SRC_DIR}" && go doc "${symbol%.*}" "${symbol##*.}" >/dev/null 2>&1); then
+        echo "ldflag target ${symbol} does not exist in ${SRC_DIR}, so the linker" >&2
+        echo "would ignore it and the package would ignore its own conf.ini." >&2
+        echo "Upstream moved or renamed it -- update LDFLAG_SYMBOLS." >&2
+        exit 1
+    fi
+done
+
+LDFLAGS=""
+for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-X \"${ldflag_symbol}\""
+done
 
 echo "building (make build, TAGS=bindata sqlite sqlite_unlock_notify) ..." >&2
 (

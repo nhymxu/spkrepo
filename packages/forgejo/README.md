@@ -101,24 +101,49 @@ new copy of the whole pipeline. The reusable workflow:
 4. Commits and pushes `data/packages.json` -- auto-triggers the root
    `deploy-static-site.yml` Pages redeploy.
 
-## Known simplifications and open risks
+## Expected behaviour worth knowing
 
-- **`conf/resource` share binding** now matches SynoCommunity's proven
-  syntax: the `data-share` name uses DSM's `{{wizard_shared_folder_name}}`
-  template placeholder (not shell `${...}`, which DSM passes through
-  literally -- the cause of the "Unable to create a shared folder named
+**The first-run web installer appears on first start. That is intended, not
+a packaging bug.** `INSTALL_LOCK` defaults to `false`
+(`modules/setting/setting.go`, `Key("INSTALL_LOCK").MustBool(false)`) and
+`cmd/web.go` serves the installer whenever it is unset. spksrc's own
+`spk/forgejo/src/conf.ini` omits the key too -- ours is byte-identical to
+theirs -- so the seeded `conf.ini` is there to *pre-fill* the installer's
+defaults (repository root, domain, port), not to bypass it. Completing the
+wizard writes `INSTALL_LOCK = true` and it stops appearing. Gitea behaves
+identically; see `packages/gitea/README.md`.
+
+## Settled by real installs
+
+- **`conf/resource` share binding** matches SynoCommunity's proven syntax:
+  the `data-share` name uses DSM's `{{wizard_shared_folder_name}}` template
+  placeholder (not shell `${...}`, which DSM passes through literally -- the
+  cause of the "Unable to create a shared folder named
   ${wizard_shared_folder_name}" install error), and `permission.rw` lists
   the package account by literal name (`sc-forgejo`). `service-setup` derives
   `SHARE_PATH` (`/var/packages/<pkg>/shares/<name>`) so the `@share_path@`
   seed in `conf.ini` resolves.
-- **`conf.ini` first-run suppression not yet verified on a real DSM7 NAS**
-  -- whether the pre-seeded `conf.ini` alone (without an explicit
-  `INSTALL_LOCK` setting) fully suppresses Forgejo's own first-run web
-  installer. Please test an actual install and report back.
+- **Package Center icon** comes from base64 `package_icon`/`package_icon_256`
+  in `INFO`; without them an installed package shows the default Synology
+  icon.
+
+Both were found and fixed by installing on a real DSM7 NAS. They apply
+unchanged to every package in this repo -- the lifecycle scripts are the
+same files from `packages/_shared/spksrc-service/` and the icon embedding
+is the same shared helper.
+
+## Known simplifications and open risks
+
 - `LOG_FILE`/`PID_FILE` defaults in `service-setup` are our own explicit
   choices (consistent with the paths spksrc's build embeds via ldflags)
   -- the real package's `service-setup.sh` excerpt we found didn't show
   where it defines these, so this isn't a byte-for-byte copy of that
   part.
+- SynoCommunity ships its own `forgejo` package. DSM identifies a package
+  by `INFO`'s `package=` name, so on a NAS that already has theirs
+  installed, Package Center treats this one as the same package. The
+  service account name is deliberately kept as `sc-forgejo` for that
+  reason (existing repository data stays accessible), but the overlap
+  itself is untested.
 - x86_64 only; one manual build per version, no auto-update watcher for
   new upstream Forgejo releases.

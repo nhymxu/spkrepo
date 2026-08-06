@@ -10,7 +10,8 @@ folder wizard, etc.), which apply identically here.
 
 ## Build locally
 
-Requires Go >= 1.26, Node >= 22, `make`, gcc (CGO is enabled for
+Requires Go >= 1.26.4 and Node >= 22.18 (1.27.1's `go.mod` and
+`package.json` `engines`; CI uses Go 1.26 / Node 24), plus `make` and gcc (CGO is enabled for
 sqlite), on an x86_64 Linux host (no cross-compilation). Gitea's
 frontend build pins a specific `pnpm` version via its own
 `package.json` `"packageManager"` field -- run `corepack enable` once
@@ -18,12 +19,12 @@ so `pnpm` resolves and installs that exact version automatically:
 
 ```bash
 corepack enable
-packages/gitea/build.sh --version 1.26.2
+packages/gitea/build.sh --version 1.27.1
 ```
 
 Add `--rev N` (default `1`) to bump the *package* revision without
 changing the upstream version -- e.g. a packaging-only fix rebuilds the
-same `--version` with `--rev 2`, producing `1.26.2-2`. The upstream
+same `--version` with `--rev 2`, producing `1.27.1-2`. The upstream
 fetch always uses the bare `--version` regardless of `--rev`.
 
 Fetches Gitea's release source archive
@@ -36,10 +37,24 @@ binary. Packages the binary (`bin/gitea`) plus a pre-seeded
 `var/conf.ini` into
 `packages/gitea/dist/gitea-<version>-<rev>-x86_64.spk`.
 
+Those `LDFLAGS` are the only thing pointing Gitea at the pre-seeded
+`conf.ini` -- `service-setup` passes neither `--config` nor
+`GITEA_WORK_DIR`/`GITEA_CUSTOM` -- and the Go linker drops a `-X` naming
+a symbol it cannot resolve *without failing the build*. Two guards keep
+that from shipping silently:
+
+- The module path is read from the unpacked `go.mod` rather than
+  hardcoded, so a module rename (Gitea did exactly this in 1.27, see
+  below) is picked up automatically.
+- After the build, every `-X` target is looked up in the binary's symbol
+  table via `go tool nm`; a moved or renamed variable fails the build
+  instead of producing a package that ignores its own `conf.ini` and
+  re-runs the first-run web installer.
+
 `--os-min-ver` (default `7.0-40000`, i.e. DSM7) and `--out` (default
 `packages/gitea/dist`) are optional overrides. The final `.spk`'s
 `INFO` `version=` and filename both use `<version>-<rev>`
-(`gitea-1.26.2-1-x86_64.spk` with the default `--rev 1`), which the
+(`gitea-1.27.1-1-x86_64.spk` with the default `--rev 1`), which the
 catalog's natural-sort version comparator (`tools/dsm_catalog.py`)
 already orders correctly against both bare and revved versions.
 
@@ -49,8 +64,16 @@ already orders correctly against both bare and revved versions.
   needs `pnpm` (via corepack) at build time, where Forgejo's tarball
   already includes vendored frontend deps.
 - Build tags: `bindata sqlite sqlite_unlock_notify` (no `timetzdata`).
-- Go module path: `code.gitea.io/gitea/...` (Forgejo's is
-  `forgejo.org/...`).
+- Go module path: `gitea.dev/...` as of 1.27 (it was
+  `code.gitea.io/gitea/...` up to and including 1.26; Forgejo's is
+  `forgejo.org/...`). `build.sh` reads it from `go.mod`, so it handles
+  either. Upstream spksrc still pins 1.26.2 and hardcodes the old path,
+  which is why its recipe cannot be copied verbatim for 1.27.
+- `PIDFile` is declared in package `cmd` (`cmd/web.go`), not
+  `modules/setting` -- in Gitea *and* Forgejo. spksrc's Makefile targets
+  `setting.PIDFile`, which resolves to nothing; this package targets
+  `<module>/cmd.PIDFile`. Cosmetic either way, since `service-setup`
+  passes `--pid` explicitly.
 - `SERVICE_PORT = 8418` (Forgejo's is `8620`) -- deliberately different
   so both could be installed on the same NAS without a port clash.
 - Everything else -- `conf/privilege`, `conf/resource`, wizard shape,
@@ -70,9 +93,46 @@ build → release → `tools/spk_to_payload.py --write-index
 data/packages.json` → commit pipeline documented in
 `packages/forgejo/README.md`.
 
+## Expected behaviour worth knowing
+
+**The first-run web installer appears on first start. That is intended, not
+a packaging bug.** `INSTALL_LOCK` defaults to `false`
+(`modules/setting/setting.go:203`, `Key("INSTALL_LOCK").MustBool(false)`)
+and `cmd/web.go:275` serves the installer whenever it is unset. spksrc's own
+`spk/gitea/src/conf.ini` omits the key too -- ours matches theirs line for
+line (differing only by a trailing newline) -- so the seeded `conf.ini` is
+there to *pre-fill* the installer's defaults (repository root, domain,
+port), not to bypass it. Completing the wizard writes `INSTALL_LOCK = true`
+and it stops appearing.
+
+## Inherited from packages/forgejo/
+
+`packages/forgejo/` has been installed on a real DSM7 NAS, and the DSM7
+packaging mechanics it settled there apply unchanged here -- the lifecycle
+scripts are literally the same files from
+`packages/_shared/spksrc-service/`, and `conf/privilege`, `conf/resource`,
+the wizard and the icon embedding differ only in the package name. So the
+share-binding syntax (`{{wizard_shared_folder_name}}`, literal `sc-gitea`
+in `permission.rw`, `SHARE_PATH` derived in `service-setup`) and the
+`INFO` icon fields are not open questions here. See that README for the
+detail.
+
 ## Known simplifications and open risks
 
-Same as `packages/forgejo/README.md`'s list -- not yet verified on a
-real DSM7 NAS (`conf/resource` wizard-binding syntax, whether the
-pre-seeded `conf.ini` fully suppresses Gitea's own first-run web
-installer), no package icon, x86_64 only, one manual build per version.
+- **This package has never run on a DSM7 NAS.** Forgejo validates the
+  packaging shell around the binary, not the binary itself, so the one
+  thing still genuinely unverified is whether Gitea starts and reads
+  `/var/packages/gitea/var/conf.ini`. `build.sh` proves the `-X` targets
+  *resolve* (see above), which is a build-time guarantee -- it does not
+  prove the running service picks the paths up. Forgejo working in
+  production is supporting evidence for the same mechanism, not a
+  substitute for an install.
+- `LOG_FILE`/`PID_FILE` in `service-setup` are our own explicit choices,
+  consistent with the paths the build embeds via ldflags.
+- SynoCommunity ships its own `gitea` package. DSM identifies a package by
+  `INFO`'s `package=` name, so on a NAS that already has theirs installed,
+  Package Center treats this one as the same package. The service account
+  name is deliberately kept as `sc-gitea` for that reason (existing
+  repository data stays accessible), but the overlap itself is untested.
+- x86_64 only; one manual build per version, no auto-update watcher for
+  new upstream Gitea releases.
