@@ -240,7 +240,7 @@
       "install_wizard": true,
       "upgrade_wizard": true,
       "link": "https://github.com/nhymxu/spkrepo/releases/download/gitea-v1.27.1-1/gitea-1.27.1-1-x86_64.spk",
-      "md5": "18a10a308248b84043505fcaf879c9be",
+      "md5": "c3a6d9d3a698b7119531baf251146b29",
       "size": 46110720,
       "thumbnail": [
         "https://nhymxu.github.io/spkrepo/icons/gitea-72.png"
