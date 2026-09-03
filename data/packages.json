@@ -311,6 +311,37 @@
         "https://nhymxu.github.io/spkrepo/icons/gitea-256.png",
         "https://nhymxu.github.io/spkrepo/icons/gitea-256.png"
       ]
+    },
+    {
+      "package": "gitea",
+      "version": "1.27.3-1",
+      "archs": [
+        "x86_64"
+      ],
+      "os_min_build": 40000,
+      "os_max_build": null,
+      "displayname": "Gitea",
+      "description": "Community managed, self-hosted lightweight Git service, built from source at github.com/go-gitea/gitea.",
+      "maintainer": "Dung Nguyen (nhymxu)",
+      "maintainer_url": "https://github.com/nhymxu/spkrepo",
+      "distributor": "",
+      "distributor_url": "",
+      "changelog": "",
+      "deppkgs": "git>=2",
+      "conflictpkgs": "",
+      "startable": true,
+      "install_wizard": true,
+      "upgrade_wizard": true,
+      "link": "https://github.com/nhymxu/spkrepo/releases/download/gitea-v1.27.3-1/gitea-1.27.3-1-x86_64.spk",
+      "md5": "3617dae52a57e192fe8ae68e03fa9fea",
+      "size": 46213120,
+      "thumbnail": [
+        "https://nhymxu.github.io/spkrepo/icons/gitea-72.png"
+      ],
+      "thumbnail_retina": [
+        "https://nhymxu.github.io/spkrepo/icons/gitea-256.png",
+        "https://nhymxu.github.io/spkrepo/icons/gitea-256.png"
+      ]
     }
   ]
 }
