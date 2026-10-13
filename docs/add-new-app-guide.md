@@ -44,6 +44,7 @@ Minimal track:
 packages/<app>/
   build.sh
   build.requires        # optional, only if build.sh needs go and/or node
+                        # (go, or go>=X.Y to pin a minimum; node)
   src/
     scripts/
       start-stop-status
@@ -65,6 +66,7 @@ packages/_shared/spksrc-service/    # shared by every package, create once
 packages/<app>/
   build.sh
   build.requires        # optional, only if build.sh needs go and/or node
+                        # (go, or go>=X.Y to pin a minimum; node)
   src/
     scripts/
       service-setup          # the only script that's actually app-specific
@@ -192,7 +194,7 @@ jobs:
 ```
 
 `build-package.yml` only sets up the toolchains a package actually
-declares: it reads `packages/<app>/build.requires` (one toolchain name
+declares: it reads `packages/<app>/build.requires` (one directive
 per line, e.g. `go` / `node`) and skips `setup-go`/`setup-node`/
 `corepack enable` entirely when the file omits or doesn't list them --
 so a prebuilt-binary app (step 1) needs no `build.requires` file at all.
@@ -200,9 +202,36 @@ Add one alongside `build.sh` listing whichever of `go`/`node` your build
 needs (see `packages/forgejo/build.requires` /
 `packages/gitea/build.requires`).
 
+### Pinning a Go minimum per package
+
+Write `go` as `go>=X.Y` when upstream's `go.mod` needs a newer Go than
+the pipeline default (`DEFAULT_GO_VERSION` in `build-package.yml`, `1.26`):
+
+```
+go>=1.27
+node
+```
+
+Do this whenever the upstream `go` directive exceeds the default.
+`setup-go` pins `GOTOOLCHAIN=local`, so Go will **not** self-upgrade past
+what was installed, and a toolchain older than the `go` directive makes
+`make build` fail. Keep the floor in the package rather than raising the
+global default, so one app needing a newer Go can't break the others (and
+so a package that only needs an older one stays on it).
+
+Bump your own line when upstream raises its directive again — that is the
+only edit needed; `setup-go` picks the value up via the detection step.
+
+Beware: the ldflag guard in your `build.sh` will report a too-old
+toolchain as *"ldflag target ... does not exist ... upstream moved or
+renamed it"*, because it resolves symbols with `go doc`, which cannot
+load a module its toolchain is too old to build. If you write your own
+guard, check the toolchain first — `packages/gitea/build.sh` shows the
+pattern.
+
 Only touch `build-package.yml` itself if the *generic* pipeline logic
-needs to change for every app at once (e.g. bumping the Go/Node
-version, or adding support for a new toolchain name).
+needs to change for every app at once (e.g. adding support for a new
+toolchain name, or changing `DEFAULT_GO_VERSION`).
 
 ## 7. Link it from the root README
 

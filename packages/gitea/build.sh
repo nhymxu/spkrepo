@@ -7,7 +7,8 @@
 # with the git dependency + dedicated-user + shared-folder wizard the
 # real package uses.
 #
-# Run on an x86_64 Linux host with Go >= 1.26, Node >= 24, `make`, gcc
+# Run on an x86_64 Linux host with Go >= 1.27 (as declared by upstream's
+# go.mod and pinned in build.requires), Node >= 24, `make`, gcc
 # (CGO_ENABLED=1) -- no cross-compilation. Gitea's frontend build is
 # pinned to a specific pnpm version via its own package.json
 # "packageManager" field; run `corepack enable` once before this script
@@ -76,9 +77,24 @@ LDFLAG_SYMBOLS=(
 # because the linker writes the -X payload in whether or not it resolved.
 # `go doc` resolves a package-level identifier specifically -- a same-named
 # struct field does not satisfy it.
+#
+# Preflight: `go doc` fails for reasons that have nothing to do with symbol
+# names (a toolchain older than go.mod's `go` directive is the common one), and
+# folding those into the loop below reports them as "upstream moved or renamed
+# it" -- sending you after a rename that never happened. Establish that the
+# module loads at all before attributing any failure to a moved symbol.
+if ! (cd "${SRC_DIR}" && go doc "${GO_MODULE}/modules/setting" >/dev/null); then
+    echo "cannot load ${GO_MODULE} with the active Go toolchain:" >&2
+    (cd "${SRC_DIR}" && go doc "${GO_MODULE}/modules/setting") >&2 || true
+    echo "This is a toolchain problem, not a missing symbol. go.mod requires" >&2
+    echo "go $(awk '$1 == "go" { print $2; exit }' "${SRC_DIR}/go.mod");" >&2
+    echo "setup-go pins GOTOOLCHAIN=local, so it will not self-upgrade." >&2
+    exit 1
+fi
+
 for ldflag_symbol in "${LDFLAG_SYMBOLS[@]}"; do
     symbol="${ldflag_symbol%%=*}"
-    if ! (cd "${SRC_DIR}" && go doc "${symbol%.*}" "${symbol##*.}" >/dev/null 2>&1); then
+    if ! (cd "${SRC_DIR}" && go doc "${symbol%.*}" "${symbol##*.}" >/dev/null); then
         echo "ldflag target ${symbol} does not exist in ${SRC_DIR}, so the linker" >&2
         echo "would ignore it and the package would ignore its own conf.ini." >&2
         echo "Upstream moved or renamed it -- update LDFLAG_SYMBOLS." >&2

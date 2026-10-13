@@ -10,8 +10,9 @@ folder wizard, etc.), which apply identically here.
 
 ## Build locally
 
-Requires Go >= 1.26.4 and Node >= 22.18 (1.27.1's `go.mod` and
-`package.json` `engines`; CI uses Go 1.26 / Node 24), plus `make` and gcc (CGO is enabled for
+Requires Go >= 1.27 and Node >= 22.18 (28.1.0's `go.mod` `go` directive and
+`package.json` `engines`; CI reads both from `build.requires`, which pins
+`go>=1.27`), plus `make` and gcc (CGO is enabled for
 sqlite), on an x86_64 Linux host (no cross-compilation). Gitea's
 frontend build pins a specific `pnpm` version via its own
 `package.json` `"packageManager"` field -- run `corepack enable` once
@@ -19,7 +20,7 @@ so `pnpm` resolves and installs that exact version automatically:
 
 ```bash
 corepack enable
-packages/gitea/build.sh --version 1.27.1
+packages/gitea/build.sh --version 28.1.0
 ```
 
 Add `--rev N` (default `1`) to bump the *package* revision without
@@ -46,10 +47,29 @@ that from shipping silently:
 - The module path is read from the unpacked `go.mod` rather than
   hardcoded, so a module rename (Gitea did exactly this in 1.27, see
   below) is picked up automatically.
-- After the build, every `-X` target is looked up in the binary's symbol
-  table via `go tool nm`; a moved or renamed variable fails the build
-  instead of producing a package that ignores its own `conf.ini` and
-  re-runs the first-run web installer.
+- Before the build, every `-X` target is resolved against the *source*
+  with `go doc`; a moved or renamed variable fails the build instead of
+  producing a package that ignores its own `conf.ini` and re-runs the
+  first-run web installer. It has to be `go doc` and not `go tool nm` on
+  the built binary, because `make build` links with `-s` and the linker
+  writes the `-X` payload into the binary whether or not it resolved --
+  so grepping the binary proves nothing.
+- The same preflight distinguishes "symbol is gone" from "`go doc`
+  cannot load the module at all". The latter is almost always a Go
+  toolchain older than go.mod's `go` directive -- `setup-go` pins
+  `GOTOOLCHAIN=local`, so it will not self-upgrade -- and reporting that
+  as "upstream moved or renamed it" sends you hunting for a rename that
+  never happened. Gitea 28 raised the directive to `go 1.27`; CI was
+  still pinned to 1.26 and reported exactly that misleading error. The
+  floor now lives in this package's own `build.requires` (`go>=1.27`)
+  rather than in one global pin.
+
+**Do not retarget these `-X`s at `appWorkPathBuiltin`/`customPathBuiltin`/
+`customConfBuiltin`.** Gitea 28 added `modules/setting/path.go`, which
+snapshots the exported vars into those unexported twins inside `init()`.
+A `-X` aimed at the twins is accepted by the linker and then immediately
+overwritten by that `init()`, so the binary silently falls back to its
+defaults. The exported names remain the correct injection point.
 
 `--os-min-ver` (default `7.0-40000`, i.e. DSM7) and `--out` (default
 `packages/gitea/dist`) are optional overrides. The final `.spk`'s

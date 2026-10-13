@@ -34,23 +34,41 @@ jobs:
       # package's build.sh needs (one per line: go, node) -- apps with a
       # prebuilt-binary build.sh (see docs/add-new-app-guide.md) can omit
       # the file entirely and skip every toolchain step below.
+      #
+      # `go` may instead be written `go>=X.Y` to pin a per-package minimum.
+      # Do that whenever upstream's go.mod `go` directive is newer than
+      # DEFAULT_GO_VERSION: setup-go sets GOTOOLCHAIN=local, so the toolchain
+      # will not self-upgrade, and a Go older than the directive makes `make
+      # build` fail. Keeping the floor here rather than in one global pin means
+      # a package that needs a newer Go can't be broken by another app's
+      # ceiling, and vice versa.
       - name: Detect build requirements
         id: requires
+        env:
+          DEFAULT_GO_VERSION: "1.26"
         run: |
           requires_file="packages/${{ inputs.package }}/build.requires"
           needs_go=false
           needs_node=false
+          go_version="${DEFAULT_GO_VERSION}"
           if [ -f "${requires_file}" ]; then
             if grep -qx "go" "${requires_file}"; then needs_go=true; fi
+            # `go>=X.Y` also implies go; it wins over the bare `go` line.
+            if go_min="$(sed -nE 's/^go>=([0-9]+\.[0-9]+)$/\1/p' "${requires_file}" | head -1)" \
+               && [ -n "${go_min}" ]; then
+              needs_go=true
+              go_version="${go_min}"
+            fi
             if grep -qx "node" "${requires_file}"; then needs_node=true; fi
           fi
           echo "go=${needs_go}" >> "$GITHUB_OUTPUT"
+          echo "go_version=${go_version}" >> "$GITHUB_OUTPUT"
           echo "node=${needs_node}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-go@v7
         if: steps.requires.outputs.go == 'true'
         with:
-          go-version: "1.26"
+          go-version: ${{ steps.requires.outputs.go_version }}
 
       - uses: actions/setup-node@v7
         if: steps.requires.outputs.node == 'true'
